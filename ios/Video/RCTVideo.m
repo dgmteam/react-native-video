@@ -480,9 +480,12 @@ static int const RCTVideoUnset = -1;
     return;
   }
 
+  /* encode uri that have special characters */
+  NSString *escaped = [uri stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+
   NSURL *url = isNetwork || isAsset
-    ? [NSURL URLWithString:uri]
-    : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
+    ? [NSURL URLWithString:escaped]
+    : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:escaped ofType:type]];
   NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
   
   if (isNetwork) {
