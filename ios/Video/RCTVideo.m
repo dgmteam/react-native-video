@@ -500,6 +500,10 @@ static int const RCTVideoUnset = -1;
        [assetOptions setObject:headers forKey:@"AVURLAssetHTTPHeaderFieldsKey"];
      }
      */
+    NSDictionary *headers = [source objectForKey:@"requestHeaders"];
+    if ([headers count] > 0) {
+     [assetOptions setObject:headers forKey:@"AVURLAssetHTTPHeaderFieldsKey"];
+    }
     NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
     [assetOptions setObject:cookies forKey:AVURLAssetHTTPCookiesKey];
 
