@@ -10,6 +10,8 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+
 
 import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
