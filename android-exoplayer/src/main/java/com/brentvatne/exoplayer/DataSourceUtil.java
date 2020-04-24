@@ -68,15 +68,28 @@ public class DataSourceUtil {
     }
 
     private static HttpDataSource.Factory buildHttpDataSourceFactory(ReactContext context, DefaultBandwidthMeter bandwidthMeter, Map<String, String> requestHeaders) {
-        OkHttpClient client = OkHttpClientProvider.getOkHttpClient();
-        CookieJarContainer container = (CookieJarContainer) client.cookieJar();
-        ForwardingCookieHandler handler = new ForwardingCookieHandler(context);
-        container.setCookieJar(new JavaNetCookieJar(handler));
-        OkHttpDataSourceFactory okHttpDataSourceFactory = new OkHttpDataSourceFactory(client, getUserAgent(context), bandwidthMeter);
+//         OkHttpClient client = OkHttpClientProvider.getOkHttpClient();
+//         CookieJarContainer container = (CookieJarContainer) client.cookieJar();
+//         ForwardingCookieHandler handler = new ForwardingCookieHandler(context);
+//         container.setCookieJar(new JavaNetCookieJar(handler));
+//         OkHttpDataSourceFactory okHttpDataSourceFactory = new OkHttpDataSourceFactory(client, getUserAgent(context), bandwidthMeter);
 
-        if (requestHeaders != null)
-            okHttpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders);
+//         if (requestHeaders != null)
+//             okHttpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders);
 
-        return okHttpDataSourceFactory;
+//         return okHttpDataSourceFactory;
+         return new EverlearnHttpDataSourceFactory(requestHeaders);
+    }
+}
+class EverlearnHttpDataSourceFactory extends HttpDataSource.BaseFactory {
+    Map<String, String> requestHeaders;
+    EverlearnHttpDataSourceFactory(Map<String, String> requestHeaders){
+        this.requestHeaders = requestHeaders;
+    }
+    @Override
+    protected HttpDataSource createDataSourceInternal(HttpDataSource.RequestProperties defaultRequestProperties) {
+        defaultRequestProperties.set(this.requestHeaders);
+        return new DefaultHttpDataSource("exoplayer_video", null, null, DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+                DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS, false, defaultRequestProperties);
     }
 }
