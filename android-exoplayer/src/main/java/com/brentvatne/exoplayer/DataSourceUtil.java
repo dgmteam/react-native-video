@@ -80,18 +80,24 @@ public class DataSourceUtil {
 //             okHttpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders);
 
 //         return okHttpDataSourceFactory;
-         return new EverlearnHttpDataSourceFactory(requestHeaders);
+          return new EverlearnHttpDataSourceFactory(requestHeaders, getUserAgent(context));
     }
 }
 class EverlearnHttpDataSourceFactory extends HttpDataSource.BaseFactory {
     Map<String, String> requestHeaders;
-    EverlearnHttpDataSourceFactory(Map<String, String> requestHeaders){
+    private String userAgent;
+    EverlearnHttpDataSourceFactory(Map<String, String> requestHeaders, String userAgent){
         this.requestHeaders = requestHeaders;
+        this.userAgent = userAgent;
     }
     @Override
     protected HttpDataSource createDataSourceInternal(HttpDataSource.RequestProperties defaultRequestProperties) {
-        defaultRequestProperties.set(this.requestHeaders);
-        return new DefaultHttpDataSource("exoplayer_video", null, null, DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-                DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS, false, defaultRequestProperties);
+      DefaultHttpDataSource config =  new DefaultHttpDataSource(userAgent);
+      if (requestHeaders != null && !requestHeaders.isEmpty()){
+        for (String keyItem : requestHeaders.keySet()) {
+          config.setRequestProperty(keyItem, requestHeaders.get(keyItem));
+        }
+      }
+     return config;
     }
 }
