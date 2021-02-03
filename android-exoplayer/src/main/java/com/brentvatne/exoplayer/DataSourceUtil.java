@@ -1,6 +1,7 @@
 package com.brentvatne.exoplayer;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Environment;
 
 import com.facebook.react.bridge.ReactContext;
@@ -12,6 +13,13 @@ import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSourceFactory;
+import com.google.android.exoplayer2.offline.ActionFileUpgradeUtil;
+import com.google.android.exoplayer2.offline.DefaultDownloadIndex;
+import com.google.android.exoplayer2.offline.Download;
+import com.google.android.exoplayer2.offline.DownloadCursor;
+import com.google.android.exoplayer2.offline.DownloadIndex;
+import com.google.android.exoplayer2.offline.DownloadManager;
+import com.google.android.exoplayer2.offline.DownloadRequest;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -20,6 +28,7 @@ import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.ext.cronet.CronetDataSourceFactory;
 import com.google.android.exoplayer2.ext.cronet.CronetEngineWrapper;
@@ -28,6 +37,8 @@ import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -36,16 +47,34 @@ public class DataSourceUtil {
     private DataSourceUtil() {
     }
 
+    private static final String DOWNLOAD_ACTION_FILE = "actions";
+    private static final String DOWNLOAD_TRACKER_ACTION_FILE = "tracked_actions";
+    private static final String DOWNLOAD_CONTENT_DIRECTORY = "downloads";
+
     private static DataSource.Factory rawDataSourceFactory = null;
     private static DataSource.Factory defaultDataSourceFactory = null;
     private static HttpDataSource.Factory defaultHttpDataSourceFactory = null;
     private static String userAgent = null;
     private static DataSource.Factory dataSourceFactory;
     private static HttpDataSource.Factory httpDataSourceFactory;
+    private static DataSource.Factory cacheDataSourceFactory;
     private static DatabaseProvider databaseProvider;
     private static File downloadDirectory;
     private static Cache downloadCache;
+    private static  DownloadManager downloadManager;
 
+    public static void release(){
+        if (downloadCache != null){
+            downloadCache.release();
+            downloadCache = null;
+        }
+        cacheDataSourceFactory = null;
+        httpDataSourceFactory = null;
+        if (downloadManager != null){
+            downloadManager.release();
+            downloadManager = null;
+        }
+    }
 
     public static void setUserAgent(String userAgent) {
         DataSourceUtil.userAgent = userAgent;
@@ -155,6 +184,20 @@ public class DataSourceUtil {
         return httpDataSourceFactory;
     }
 
+    public static synchronized DataSource.Factory getCacheDataSourceFactory(Context context) {
+        if (cacheDataSourceFactory == null) {
+            Cache cache = getDownloadCache(context);
+            HttpDataSource.Factory httpDataSourceFactory = getHttpDataSourceFactory(context);
+            cacheDataSourceFactory =
+                    new CacheDataSource.Factory()
+                            .setCache(cache)
+                            .setUpstreamDataSourceFactory(httpDataSourceFactory)
+                            .setCacheWriteDataSinkFactory(null); // Disable writing.
+
+        }
+        return cacheDataSourceFactory;
+    }
+
     private static CacheDataSource.Factory buildReadOnlyCacheDataSource(
             DataSource.Factory upstreamFactory, Cache cache) {
         return new CacheDataSource.Factory()
@@ -167,7 +210,7 @@ public class DataSourceUtil {
     private static synchronized Cache getDownloadCache(Context context) {
         if (downloadCache == null) {
             File downloadContentDirectory =
-                    new File(getDownloadDirectory(context), "everlearn");
+                    new File(getDownloadDirectory(context), DOWNLOAD_CONTENT_DIRECTORY);
             downloadCache =
                     new SimpleCache(
                             downloadContentDirectory, new NoOpCacheEvictor(), getDatabaseProvider(context));
@@ -176,8 +219,8 @@ public class DataSourceUtil {
     }
     private static synchronized File getDownloadDirectory(Context context) {
         if (downloadDirectory == null) {
-//      downloadDirectory = context.getExternalFilesDir(/* type= */ null);
-            downloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            downloadDirectory = context.getExternalFilesDir(/* type= */ null);
+//            downloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             if (downloadDirectory == null) {
                 downloadDirectory = context.getFilesDir();
             }
@@ -190,6 +233,63 @@ public class DataSourceUtil {
             databaseProvider = new ExoDatabaseProvider(context);
         }
         return databaseProvider;
+    }
+
+    private static synchronized void ensureDownloadManagerInitialized(Context context) {
+        if (downloadManager == null) {
+            DefaultDownloadIndex downloadIndex = new DefaultDownloadIndex(getDatabaseProvider(context));
+            upgradeActionFile(
+                    context, DOWNLOAD_ACTION_FILE, downloadIndex, /* addNewDownloadsAsCompleted= */ false);
+            upgradeActionFile(
+                    context,
+                    DOWNLOAD_TRACKER_ACTION_FILE,
+                    downloadIndex,
+                    /* addNewDownloadsAsCompleted= */ true);
+            downloadManager =
+                    new DownloadManager(
+                            context,
+                            getDatabaseProvider(context),
+                            getDownloadCache(context),
+                            getHttpDataSourceFactory(context),
+                            Executors.newFixedThreadPool(/* nThreads= */ 6));
+        }
+    }
+
+    public static synchronized DownloadRequest getDownloadRequest(Context pContext,String mediaUri){
+        ensureDownloadManagerInitialized(pContext);
+        HashMap<Uri, Download> downloads = loadDownloads(downloadManager.getDownloadIndex());
+        Download download = downloads.get(Uri.parse(mediaUri));
+        return download != null && download.state != Download.STATE_FAILED ? download.request : null;
+    }
+
+    private static HashMap<Uri, Download> loadDownloads(DownloadIndex downloadIndex) {
+        HashMap<Uri, Download> downloads = new HashMap<>();
+        try (DownloadCursor loadedDownloads = downloadIndex.getDownloads()) {
+            while (loadedDownloads.moveToNext()) {
+                Download download = loadedDownloads.getDownload();
+                downloads.put(download.request.uri, download);
+            }
+        } catch (IOException e) {
+            Log.w("DataSourceUtil", "Failed to query downloads", e);
+        }
+        return downloads;
+    }
+
+    private static synchronized void upgradeActionFile(
+            Context context,
+            String fileName,
+            DefaultDownloadIndex downloadIndex,
+            boolean addNewDownloadsAsCompleted) {
+        try {
+            ActionFileUpgradeUtil.upgradeAndDelete(
+                    new File(getDownloadDirectory(context), fileName),
+                    /* downloadIdProvider= */ null,
+                    downloadIndex,
+                    /* deleteOnFailure= */ true,
+                    addNewDownloadsAsCompleted);
+        } catch (IOException e) {
+            Log.e("DataSourceUtil", "Failed to upgrade action file: " + fileName, e);
+        }
     }
 
 }
