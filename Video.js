@@ -410,6 +410,8 @@ Video.propTypes = {
     base64Certificate: PropTypes.bool,
     certificateUrl: PropTypes.string,
     getLicense: PropTypes.func,
+    drmOfflineMediaId: PropTypes.string,
+    drmKeySetId: PropTypes.string
   }),
   minLoadRetryCount: PropTypes.number,
   maxBitRate: PropTypes.number,
