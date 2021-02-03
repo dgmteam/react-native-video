@@ -97,7 +97,7 @@ static int const RCTVideoUnset = -1;
 {
   if ((self = [super init])) {
     _eventDispatcher = eventDispatcher;
-	  _automaticallyWaitsToMinimizeStalling = YES;
+      _automaticallyWaitsToMinimizeStalling = YES;
     _playbackRateObserverRegistered = NO;
     _isExternalPlaybackActiveObserverRegistered = NO;
     _playbackStalled = NO;
@@ -830,13 +830,14 @@ static int const RCTVideoUnset = -1;
   if(self.onVideoEnd) {
     self.onVideoEnd(@{@"target": self.reactTag});
   }
-  
-  if (_repeat) {
     AVPlayerItem *item = [notification object];
     [item seekToTime:kCMTimeZero];
+  if (_repeat) {
+//    AVPlayerItem *item = [notification object];
+//    [item seekToTime:kCMTimeZero];
     [self applyModifiers];
   } else {
-    [self removePlayerTimeObserver];
+    // [self removePlayerTimeObserver];
   }
 }
 
@@ -1056,8 +1057,8 @@ static int const RCTVideoUnset = -1;
 
 - (void)setAutomaticallyWaitsToMinimizeStalling:(BOOL)waits
 {
-	_automaticallyWaitsToMinimizeStalling = waits;
-	_player.automaticallyWaitsToMinimizeStalling = waits;
+    _automaticallyWaitsToMinimizeStalling = waits;
+    _player.automaticallyWaitsToMinimizeStalling = waits;
 }
 
 
@@ -1767,6 +1768,7 @@ didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
   }
   _loadingRequest = loadingRequest;
   NSURL *url = loadingRequest.request.URL;
+  NSString *licenseUrl = url.absoluteString;
   NSString *contentId = url.host;
   if (self->_drm != nil) {
     NSString *contentIdOverride = (NSString *)[self->_drm objectForKey:@"contentId"];
@@ -1798,11 +1800,11 @@ didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
               }
               if (spcData != nil) {
                 if(self.onGetLicense) {
-                  NSString *spcStr = [[NSString alloc] initWithData:spcData encoding:NSASCIIStringEncoding];
+                    NSString *spcStr = spcData.base64Encoding;
                   self->_requestingCertificate = YES;
+//                    NSData *data1 = [[[NSData alloc] initWithBase64EncodedData:certificateData options:NSDataBase64DecodingIgnoreUnknownCharacters] base64EncodedStringWithOptions:0];
                   self.onGetLicense(@{@"spc": spcStr,
                                       @"contentId": contentId,
-                                      @"spcBase64": [[[NSData alloc] initWithBase64EncodedData:certificateData options:NSDataBase64DecodingIgnoreUnknownCharacters] base64EncodedStringWithOptions:0],
                                       @"target": self.reactTag});
                 } else if(licenseServer != nil) {
                   NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
