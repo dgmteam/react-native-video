@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
 
   s.subspec "Video" do |ss|
     ss.source_files  = "ios/Video/*.{h,m,swift}"
-     s.static_framework = true
+    s.static_framework = true
   end
 
   # s.subspec "VideoCaching" do |ss|
@@ -29,7 +29,7 @@ Pod::Spec.new do |s|
   #   s.static_framework = true
   # end
 
-  s.dependency "React-Core"
+  s.dependency "React"
 
   s.default_subspec = "Video"
 
