@@ -5,6 +5,8 @@
 #import <React/UIView+React.h>
 #include <MediaAccessibility/MediaAccessibility.h>
 #include <AVFoundation/AVFoundation.h>
+#import <react_native_video/react_native_video-Swift.h>
+
 
 static NSString *const statusKeyPath = @"status";
 static NSString *const playbackLikelyToKeepUpKeyPath = @"playbackLikelyToKeepUp";
@@ -159,6 +161,7 @@ static int const RCTVideoUnset = -1;
 
   viewController.view.frame = self.bounds;
   viewController.player = player;
+    
   return viewController;
 }
 
@@ -173,7 +176,6 @@ static int const RCTVideoUnset = -1;
   {
     return([playerItem duration]);
   }
-  
   return(kCMTimeInvalid);
 }
 
@@ -499,15 +501,33 @@ static int const RCTVideoUnset = -1;
   bool shouldCache = [RCTConvert BOOL:[source objectForKey:@"shouldCache"]];
   NSString *uri = [source objectForKey:@"uri"];
   NSString *type = [source objectForKey:@"type"];
+    NSString *drmOfflineMediaId = [_drm objectForKey:@"drmOfflineMediaId"];
   AVURLAsset *asset;
-  if (!uri || [uri isEqualToString:@""]) {
+    if ((!drmOfflineMediaId || [drmOfflineMediaId isEqualToString:@""]) && (!uri || [uri isEqualToString:@""])) {
     DebugLog(@"Could not find video URL in source '%@'", source);
     return;
   }
-
+    /**
+            play drm offline video base on media id has been store in client
+     */
+    if (!(!drmOfflineMediaId || [drmOfflineMediaId isEqualToString:@""]) ) {
+        DownloadState downloadState = [[AssetPersistenceManager sharedManager] downloadStateWithVideoName:drmOfflineMediaId];
+        if (downloadState == DownloadStateDownloaded){
+            Asset *localAsset = [[AssetPersistenceManager sharedManager] getAssetOfflineModelWithVideoName:drmOfflineMediaId];
+            if (!localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys){
+                localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys = true;
+            }
+            
+            [localAsset addObserverableWithCompletion:^(AVURLAsset * urlAsset) {
+                NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
+                [self playerItemPrepareText:urlAsset assetOptions:assetOptions withCallback:handler];
+            }];
+            return;
+        }
+    }
   /* encode uri that have special characters */
   NSString *escaped = [uri stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-
+    
   NSURL *url = isNetwork || isAsset
     ? [NSURL URLWithString:uri]
     : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
