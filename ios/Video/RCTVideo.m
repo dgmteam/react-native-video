@@ -5,7 +5,7 @@
 #import <React/UIView+React.h>
 #include <MediaAccessibility/MediaAccessibility.h>
 #include <AVFoundation/AVFoundation.h>
-// #import <react_native_video/react_native_video-Swift.h>
+//#import <react_native_video/react_native_video-Swift.h>
 #import "react_native_video-Swift.h"
 
 
@@ -48,6 +48,7 @@ static int const RCTVideoUnset = -1;
   BOOL _playbackRateObserverRegistered;
   BOOL _isExternalPlaybackActiveObserverRegistered;
   BOOL _videoLoadStarted;
+    Asset *drmOfflineAsset;
   
   bool _pendingSeek;
   float _pendingSeekTime;
@@ -359,6 +360,9 @@ static int const RCTVideoUnset = -1;
 
 - (void)setSrc:(NSDictionary *)source
 {
+    if ([self shouldBreakInitDrmVideoPlayer]){
+        return;
+    }
   _source = source;
   [self removePlayerLayer];
   [self removePlayerTimeObserver];
@@ -504,17 +508,18 @@ static int const RCTVideoUnset = -1;
   NSString *type = [source objectForKey:@"type"];
     NSString *drmOfflineMediaId = [_drm objectForKey:@"drmOfflineMediaId"];
   AVURLAsset *asset;
-    if ((!drmOfflineMediaId || [drmOfflineMediaId isEqualToString:@""]) && (!uri || [uri isEqualToString:@""])) {
+    if (![self shouldPlayDrmOffline] && (!uri || [uri isEqualToString:@""])) {
     DebugLog(@"Could not find video URL in source '%@'", source);
     return;
   }
     /**
             play drm offline video base on media id has been store in client
      */
-    if (!(!drmOfflineMediaId || [drmOfflineMediaId isEqualToString:@""]) ) {
+    if ([self shouldPlayDrmOffline]) {
         DownloadState downloadState = [[AssetPersistenceManager sharedManager] downloadStateWithVideoName:drmOfflineMediaId];
         if (downloadState == DownloadStateDownloaded){
             Asset *localAsset = [[AssetPersistenceManager sharedManager] getAssetOfflineModelWithVideoName:drmOfflineMediaId];
+            self -> drmOfflineAsset = localAsset;
             if (!localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys){
                 localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys = true;
             }
@@ -2007,6 +2012,18 @@ didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
     self.onRestoreUserInterfaceForPictureInPictureStop(@{});
   }
   _restoreUserInterfaceForPIPStopCompletionHandler = completionHandler;
+}
+- (BOOL) shouldPlayDrmOffline{
+    NSString *drmOfflineMediaId = [_drm objectForKey:@"drmOfflineMediaId"];
+    return !(!drmOfflineMediaId || [drmOfflineMediaId isEqualToString:@""]);
+}
+- (BOOL) shouldBreakInitDrmVideoPlayer {
+    BOOL ret = false;
+    if ([self shouldPlayDrmOffline]){
+        NSString *drmOfflineMediaId = [_drm objectForKey:@"drmOfflineMediaId"];
+        ret = [drmOfflineMediaId isEqualToString:self->drmOfflineAsset.stream.name];
+    }
+    return ret;
 }
 #endif
 
