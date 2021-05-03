@@ -5,7 +5,8 @@
 #import <React/UIView+React.h>
 #include <MediaAccessibility/MediaAccessibility.h>
 #include <AVFoundation/AVFoundation.h>
-#import <react_native_video/react_native_video-Swift.h>
+// #import <react_native_video/react_native_video-Swift.h>
+#import "react_native_video-Swift.h"
 
 
 static NSString *const statusKeyPath = @"status";
