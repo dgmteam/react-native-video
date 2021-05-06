@@ -70,10 +70,10 @@ public class DataSourceUtil {
         }
         cacheDataSourceFactory = null;
         httpDataSourceFactory = null;
-        if (downloadManager != null){
-            downloadManager.release();
-            downloadManager = null;
-        }
+//        if (downloadManager != null){
+//            downloadManager.release();
+//            downloadManager = null;
+//        }
     }
 
     public static void setUserAgent(String userAgent) {
