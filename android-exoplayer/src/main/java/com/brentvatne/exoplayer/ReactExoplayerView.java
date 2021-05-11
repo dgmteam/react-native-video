@@ -628,7 +628,6 @@ class ReactExoplayerView extends FrameLayout implements
         themedReactContext.removeLifecycleEventListener(this);
         audioBecomingNoisyReceiver.removeListener();
         bandwidthMeter.removeEventListener(this);
-        DataSourceUtil.release();
     }
 
     private boolean requestAudioFocus() {

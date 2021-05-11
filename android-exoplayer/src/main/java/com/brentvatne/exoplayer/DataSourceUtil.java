@@ -63,6 +63,17 @@ public class DataSourceUtil {
     private static Cache downloadCache;
     private static  DownloadManager downloadManager;
 
+
+    public static  synchronized void setupCacheConfig(DataSource.Factory _dataSourceFactory,Cache _downloadCache,File _downloadDirectory,DatabaseProvider _databaseProvider,
+                                                      HttpDataSource.Factory  _httpDataSourceFactory   ) {
+
+        dataSourceFactory = _dataSourceFactory;
+        downloadCache = _downloadCache;
+        downloadDirectory = _downloadDirectory;
+        databaseProvider = _databaseProvider;
+        httpDataSourceFactory = _httpDataSourceFactory;
+    }
+
     public static void release(){
         if (downloadCache != null){
             downloadCache.release();
@@ -70,10 +81,6 @@ public class DataSourceUtil {
         }
         cacheDataSourceFactory = null;
         httpDataSourceFactory = null;
-//        if (downloadManager != null){
-//            downloadManager.release();
-//            downloadManager = null;
-//        }
     }
 
     public static void setUserAgent(String userAgent) {
@@ -291,5 +298,4 @@ public class DataSourceUtil {
             Log.e("DataSourceUtil", "Failed to upgrade action file: " + fileName, e);
         }
     }
-
 }
