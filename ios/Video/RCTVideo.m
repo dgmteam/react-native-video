@@ -49,7 +49,7 @@ static int const RCTVideoUnset = -1;
   BOOL _isExternalPlaybackActiveObserverRegistered;
   BOOL _videoLoadStarted;
     Asset *drmOfflineAsset;
-  
+
   bool _pendingSeek;
   float _pendingSeekTime;
   float _lastSeekTime;
@@ -163,7 +163,7 @@ static int const RCTVideoUnset = -1;
 
   viewController.view.frame = self.bounds;
   viewController.player = player;
-    
+
   return viewController;
 }
 
@@ -523,7 +523,7 @@ static int const RCTVideoUnset = -1;
             if (!localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys){
                 localAsset.urlAsset.resourceLoader.preloadsEligibleContentKeys = true;
             }
-            
+
             [localAsset addObserverableWithCompletion:^(AVURLAsset * urlAsset) {
                 NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
                 [self playerItemPrepareText:urlAsset assetOptions:assetOptions withCallback:handler];
@@ -533,7 +533,7 @@ static int const RCTVideoUnset = -1;
     }
   /* encode uri that have special characters */
   NSString *escaped = [uri stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    
+
   NSURL *url = isNetwork || isAsset
     ? [NSURL URLWithString:uri]
     : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
@@ -859,11 +859,11 @@ static int const RCTVideoUnset = -1;
     AVPlayerItem *item = [notification object];
     [item seekToTime:kCMTimeZero];
   if (_repeat) {
-//    AVPlayerItem *item = [notification object];
-//    [item seekToTime:kCMTimeZero];
+    AVPlayerItem *item = [notification object];
+    [item seekToTime:kCMTimeZero];
     [self applyModifiers];
   } else {
-    // [self removePlayerTimeObserver];
+     [self removePlayerTimeObserver];
   }
 }
 
