@@ -15,6 +15,8 @@ import android.view.accessibility.CaptioningManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 
+import androidx.core.content.ContextCompat;
+
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
@@ -70,6 +72,7 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.ui.StyledPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
@@ -116,8 +119,8 @@ class ReactExoplayerView extends FrameLayout implements
     private View playPauseControlContainer;
     private Player.EventListener eventListener;
 
-    private ExoPlayerView exoPlayerView;
-
+    //    private ExoPlayerView exoPlayerView;
+    private StyledPlayerView exoPlayerView;
     private DataSource.Factory mediaDataSourceFactory;
     private SimpleExoPlayer player;
     private DefaultTrackSelector trackSelector;
@@ -233,7 +236,7 @@ class ReactExoplayerView extends FrameLayout implements
         LayoutParams layoutParams = new LayoutParams(
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.MATCH_PARENT);
-        exoPlayerView = new ExoPlayerView(getContext());
+        exoPlayerView = new StyledPlayerView(getContext());
         exoPlayerView.setLayoutParams(layoutParams);
 
         addView(exoPlayerView, 0, layoutParams);
@@ -460,7 +463,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
         if (playerNeedsSource && (srcUri != null || drmOfflineMediaId != null)) {
             MediaItem mediaItem = this.createMediaItem();
-            exoPlayerView.invalidateAspectRatio();
+//            exoPlayerView.invalidateAspectRatio();
             boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
             if (haveResumePosition) {
                 player.seekTo(resumeWindow, resumePosition);
@@ -505,7 +508,7 @@ class ReactExoplayerView extends FrameLayout implements
             player.setPlaybackParameters(params);
         }
         if (playerNeedsSource && srcUri != null) {
-            exoPlayerView.invalidateAspectRatio();
+//            exoPlayerView.invalidateAspectRatio();
 
             ArrayList<MediaSource> mediaSourceList = buildTextSources();
             MediaSource videoSource = buildMediaSource(srcUri, extension);
@@ -1384,12 +1387,13 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setUseTextureView(boolean useTextureView) {
-        boolean finallyUseTextureView = useTextureView && this.drmUUID == null;
-        exoPlayerView.setUseTextureView(finallyUseTextureView);
+//        boolean finallyUseTextureView = useTextureView && this.drmUUID == null;
+//        exoPlayerView.setUseTextureView(finallyUseTextureView);
+//        exoPlayerView.setsur
     }
 
     public void setHideShutterView(boolean hideShutterView) {
-        exoPlayerView.setHideShutterView(hideShutterView);
+        exoPlayerView.setShutterBackgroundColor(hideShutterView ? ContextCompat.getColor(getContext(), android.R.color.transparent) :  ContextCompat.getColor(getContext(), android.R.color.black));
     }
 
     public void setBufferConfig(int newMinBufferMs, int newMaxBufferMs, int newBufferForPlaybackMs, int newBufferForPlaybackAfterRebufferMs) {
