@@ -448,7 +448,7 @@ class ReactExoplayerView extends FrameLayout implements
             player =
                     new SimpleExoPlayer.Builder(/* context= */ getContext(), renderersFactory)
                             .setMediaSourceFactory(mediaSourceFactory)
-//                            .setTrackSelector(trackSelector)
+                            .setTrackSelector(trackSelector)
                             .build();
             player.addListener(this);
             player.addAnalyticsListener(new EventLogger(trackSelector));
