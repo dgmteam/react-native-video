@@ -526,11 +526,11 @@ static int const RCTVideoUnset = -1;
         }
     }
   /* encode uri that have special characters */
-  NSString *escaped = [uri stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    
-  NSURL *url = isNetwork || isAsset
-    ? [NSURL URLWithString:uri]
-    : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
+    NSString *escaped = [uri stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+
+    NSURL *url = isNetwork || isAsset
+      ? ([NSURL URLWithString:uri] != nil ? [NSURL URLWithString:uri] : [NSURL URLWithString:escaped])
+      : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
   NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
   
   if (isNetwork) {
